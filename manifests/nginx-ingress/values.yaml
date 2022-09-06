@@ -1,0 +1,4 @@
+controller:
+  pod:
+    annotations:
+      linkerd.io/inject: enabled
