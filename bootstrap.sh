@@ -14,7 +14,7 @@ case "${1}" in
     {
       linkerd_install=(helm install linkerd2 --version 2.11.1 --set-file identityTrustAnchorsPEM=/home/jason/tmp/ca/root.crt  --set-file identity.issuer.tls.crtPEM=/home/jason/tmp/ca/issuer.crt   --set-file identity.issuer.tls.keyPEM=/home/jason/tmp/ca/issuer.key linkerd/linkerd2 --wait)
       ## Is it a Prod cluster?
-      if [[ "${c}" == "prod*" ]]
+      if [[ "${c}" == "prod"* ]]
       then
         size=g4s.kube.large
         linkerd_install+=(-f manifests/linkerd/values-ha.yaml)
@@ -39,9 +39,14 @@ case "${1}" in
       curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/booksapp.yml | linkerd inject - | kubectl apply -n booksapp -f -
       
       ## Create BCloud Config
-      kubectl apply -f manifests/buoyant/dataplane.yaml
-      kubectl apply -f manifests/buoyant/controlplane.yaml
-      
+       if [[ "${c}" == "prod"* ]]
+      then
+        kubectl apply -f manifests/buoyant/dataplane-prod.yaml
+        kubectl apply -f manifests/buoyant/controlplane-prod.yaml
+      else
+        kubectl apply -f manifests/buoyant/dataplane.yaml
+        kubectl apply -f "manifests/buoyant/controlplane-${c}.yaml"
+      fi
       unset KUBECONFIG
     }
   ;;

@@ -1,0 +1,44 @@
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: buoyant-cloud
+  namespace: buoyant-cloud
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: emojivoto
+  namespace: emojivoto
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: nginx-ingress
+  namespace: nginx-ingress
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: booksapp
+  namespace: booksapp
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: cert-manager
+  namespace: cert-manager
+spec:
+  workloadSelector:
+    matchLabels: {}
