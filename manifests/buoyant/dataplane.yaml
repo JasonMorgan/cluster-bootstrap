@@ -19,26 +19,18 @@ spec:
 apiVersion: linkerd.buoyant.io/v1alpha1
 kind: DataPlane
 metadata:
-  name: nginx-ingress
-  namespace: nginx-ingress
+  name: ambassador
+  namespace: ambassador
 spec:
   workloadSelector:
     matchLabels: {}
----
-apiVersion: linkerd.buoyant.io/v1alpha1
-kind: DataPlane
-metadata:
-  name: booksapp
-  namespace: booksapp
-spec:
-  workloadSelector:
-    matchLabels: {}
----
-apiVersion: linkerd.buoyant.io/v1alpha1
-kind: DataPlane
-metadata:
-  name: cert-manager
-  namespace: cert-manager
-spec:
-  workloadSelector:
-    matchLabels: {}
+# ---
+# apiVersion: linkerd.buoyant.io/v1alpha1
+# kind: DataPlane
+# metadata:
+#   name: booksapp
+#   namespace: booksapp
+# spec:
+#   workloadSelector:
+#     matchLabels: {}
+

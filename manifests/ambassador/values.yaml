@@ -1,0 +1,4 @@
+emissary-ingress:
+  replicaCount: 1
+  podAnnotations:
+    linkerd.io/inject: enabled
