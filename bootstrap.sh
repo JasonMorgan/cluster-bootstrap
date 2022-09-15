@@ -64,11 +64,18 @@ case "${1}" in
         # kubectl rollout restart deploy -n booksapp
       else
         kubectl apply -f manifests/buoyant/dataplane.yaml
-        kubectl apply -f "manifests/buoyant/controlplane-dev.yaml"
+        kubectl apply -f "manifests/buoyant/controlplane.yaml"
         # kubectl apply -f ../linkerd-demos/policy/manifests/booksapp
         # kubectl annotate ns booksapp config.linkerd.io/default-inbound-policy=deny
         # kubectl rollout restart deploy -n booksapp
       fi
+
+      ## Hack up traffic splits
+      
+      # kubectl annotate --overwrite crd/trafficsplits.split.smi-spec.io meta.helm.sh/release-name=linkerd-smi meta.helm.sh/release-namespace=linkerd-smi
+      # kubectl label crd/trafficsplits.split.smi-spec.io   app.kubernetes.io/managed-by=Helmrd-smi --create-namespace linkerd-smi
+      # helm install linkerd-smi -n linkerd-smi --create-namespace linkerd-smi/linkerd-smi
+
       unset KUBECONFIG
     }
   ;;
