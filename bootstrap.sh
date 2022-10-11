@@ -77,12 +77,14 @@ case "${1}" in
       # helm install linkerd-smi -n linkerd-smi --create-namespace linkerd-smi/linkerd-smi
 
       unset KUBECONFIG
+      civo k8s config "${c}" -sym
     }
   ;;
   stop)
     for c in "${clusters[@]}"
     {
       civo k8s delete "${c}" -y
+      kubectl ctx -d "${c}"
     }
   ;;
   *)
