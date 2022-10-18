@@ -12,26 +12,51 @@ case "${1}" in
   start)
     for c in "${clusters[@]}"
     {
-      linkerd_install=(helm install linkerd2 --version 2.11.1 --set-file identityTrustAnchorsPEM=/home/jason/tmp/ca/root.crt  --set-file identity.issuer.tls.crtPEM=/home/jason/tmp/ca/issuer.crt   --set-file identity.issuer.tls.keyPEM=/home/jason/tmp/ca/issuer.key linkerd/linkerd2 --wait)
+      helm repo update > /dev/null
+
+      linkerd_install=(helm install linkerd-control-plane -n linkerd --version 1.9.3 --set-file identityTrustAnchorsPEM=/home/jason/tmp/ca/root.crt  --set-file identity.issuer.tls.crtPEM=/home/jason/tmp/ca/issuer.crt --set-file identity.issuer.tls.keyPEM=/home/jason/tmp/ca/issuer.key linkerd/linkerd-control-plane --wait)
       ## Is it a Prod cluster?
       if [[ "${c}" == "prod"* ]]
       then
         size=g4s.kube.large
+        number=5
         linkerd_install+=(-f manifests/linkerd/values-ha.yaml)
+        env=civo
         # linkerd_install+=(-f manifests/linkerd/overrides.yaml)
+      elif [[ "${c}" == "local"* ]]
+      then
+        env=local
       else
-        size=g4s.kube.small
+        size=g4s.kube.large
+        number=1
+        env=civo
       fi
+
+      case "${env}" in
+        civo)
+          civo k8s create "${c}" -n $number -s "${size}" -r Traefik-v2-nodeport -w || true
+          civo k8s config "${c}" > ~/tmp/"${c}"
+          chmod 600 ~/tmp/"${c}"
+          export KUBECONFIG=~/tmp/"${c}"
+          ;;
+        local)
+          k3d cluster delete local > /dev/null 2>&1 || true
+          k3d cluster create local -s 3
+          ;;
+        *)
+          echo "something got fucked up in the env"
+          exit 1
+        ;;
+      esac
       ## Create Cluster
-      civo k8s create "${c}" -n 3 -s "${size}" -r Traefik-v2-nodeport -w || true
-      civo k8s config "${c}" > ~/tmp/"${c}"
-      chmod 600 ~/tmp/"${c}"
-      export KUBECONFIG=~/tmp/"${c}"
+      
 
       ## Install Apps
       ### Linkerd
+      helm install linkerd-crds linkerd/linkerd-crds \
+        -n linkerd --create-namespace --wait
       "${linkerd_install[@]}"
-      /home/jason/.linkerd2/bin/linkerd-stable-2.11.4 check
+      /home/jason/.linkerd2/bin/linkerd-stable-2.12.1 check
       
       ### BCloud
 
@@ -43,32 +68,50 @@ case "${1}" in
       kubectl wait --timeout=90s --for=condition=available deployment emissary-apiext -n emissary-system
       kubectl scale -n emissary-system deployment emissary-apiext --replicas=1
       helm install -n ambassador --create-namespace edge-stack datawire/edge-stack -f manifests/ambassador/values.yaml --wait
+      helm install grafana -n grafana --create-namespace grafana/grafana \
+        -f https://raw.githubusercontent.com/linkerd/linkerd2/main/grafana/values.yaml
+      helm install linkerd-viz -n linkerd-viz  --set grafana.url=grafana.grafana:3000 --create-namespace linkerd/linkerd-viz --wait
 
       ### Apps
       
       curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/emojivoto.yml | linkerd inject - | kubectl apply -f -
-      # kubectl create ns booksapp
-      # curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/booksapp.yml | linkerd inject - | kubectl apply -n booksapp -f -
+      kubectl create ns booksapp
+      curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/booksapp.yml | linkerd inject - | kubectl apply -n booksapp -f -
       
       ## Create BCloud Config
       if [[ "${c}" == "prod"* ]]
       then
+        helm install linkerd-multicluster -n linkerd-multicluster --create-namespace linkerd/linkerd-multicluster --wait
+        helm install linkerd-jaeger -n linkerd-jaeger --create-namespace linkerd/linkerd-jaeger --wait
+        kubectl -n emojivoto set env --all deploy OC_AGENT_HOST=collector.linkerd-jaeger:55678
+        kubectl apply -k github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.1
+        helm install linkerd-gamma /home/jason/git_repos/buoyant/linkerd-golang-extension/charts/linkerd-gamma
+        kubectl apply -f https://raw.githubusercontent.com/fluxcd/flagger/main/artifacts/flagger/crd.yaml
+        helm upgrade --install flagger flagger/flagger --namespace=linkerd-viz --set crd.create=false --set meshProvider=linkerd --set metricsServer=http://prometheus:9090
+        kubectl apply -k /home/jason/git_repos/jasonmorgan/linkerd-demos/gitops/flux/apps/source/podinfo/
         kubectl apply -f manifests/buoyant/dataplane-prod.yaml
         kubectl apply -f manifests/buoyant/controlplane-prod.yaml
       elif [[ "${c}" == "dev" || "${c}" == "test" ]]
       then
         kubectl apply -f manifests/buoyant/dataplane.yaml
         kubectl apply -f "manifests/buoyant/controlplane-${c}.yaml"
-        # kubectl apply -f ../linkerd-demos/policy/manifests/booksapp
-        # kubectl annotate ns booksapp config.linkerd.io/default-inbound-policy=deny
-        # kubectl rollout restart deploy -n booksapp
+      elif [[ "${c}" == "local" ]]
+      then
+        kubectl apply -k github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.1
+        helm install linkerd-gamma /home/jason/git_repos/buoyant/linkerd-golang-extension/charts/linkerd-gamma
+        kubectl apply -f https://raw.githubusercontent.com/fluxcd/flagger/main/artifacts/flagger/crd.yaml
+        helm upgrade --install flagger flagger/flagger --namespace=linkerd-viz --set crd.create=false --set meshProvider=linkerd --set metricsServer=http://prometheus:9090
+        kubectl apply -k /home/jason/git_repos/jasonmorgan/linkerd-demos/gitops/flux/apps/source/podinfo/
+        kubectl apply -f manifests/buoyant/dataplane-prod.yaml
+        kubectl apply -f manifests/buoyant/controlplane-prod.yaml
       else
         kubectl apply -f manifests/buoyant/dataplane.yaml
         kubectl apply -f "manifests/buoyant/controlplane.yaml"
-        # kubectl apply -f ../linkerd-demos/policy/manifests/booksapp
-        # kubectl annotate ns booksapp config.linkerd.io/default-inbound-policy=deny
-        # kubectl rollout restart deploy -n booksapp
       fi
+
+      kubectl apply -f ../linkerd-demos/policy/manifests/booksapp
+      kubectl annotate ns booksapp config.linkerd.io/default-inbound-policy=deny
+      kubectl rollout restart deploy -n booksapp
 
       ## Hack up traffic splits
       
@@ -77,14 +120,28 @@ case "${1}" in
       # helm install linkerd-smi -n linkerd-smi --create-namespace linkerd-smi/linkerd-smi
 
       unset KUBECONFIG
-      civo k8s config "${c}" -sym
+      # kubectl ctx -d "${c}" || true
     }
+
+    # Clean out the kubeconfig
+    echo "" > ~/.kube/config
+
+    # Load up the new configs
+    if [[ ! "${clusters[0]}" == "local" ]]
+    then
+      for c in "${clusters[@]}"
+      {
+        civo k8s config "${c}" -sym
+        kubectl ctx "${c}"
+        kubectl ns default
+      }
+    fi
   ;;
   stop)
     for c in "${clusters[@]}"
     {
       civo k8s delete "${c}" -y
-      kubectl ctx -d "${c}"
+      kubectl ctx -d "${c}" || true
     }
   ;;
   *)
