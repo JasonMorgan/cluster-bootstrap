@@ -24,4 +24,4 @@ civo domain record add "${domain}" -n '*' -e A -v "${ipAddress}"
 
 ## Add finalizers to east
 
-kubectl apply --kubeconfig ~/.kube/configs/east -f manifests/finalizers/
+kubectl apply -f manifests/finalizers/
