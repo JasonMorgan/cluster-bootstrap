@@ -24,13 +24,30 @@ metadata:
 spec:
   workloadSelector:
     matchLabels: {}
-# ---
-# apiVersion: linkerd.buoyant.io/v1alpha1
-# kind: DataPlane
-# metadata:
-#   name: booksapp
-#   namespace: booksapp
-# spec:
-#   workloadSelector:
-#     matchLabels: {}
-
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: booksapp
+  namespace: booksapp
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: linkerd-viz
+  namespace: linkerd-viz
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: grafana
+  namespace: grafana
+spec:
+  workloadSelector:
+    matchLabels: {}

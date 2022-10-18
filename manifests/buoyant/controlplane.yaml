@@ -5,4 +5,4 @@ metadata:
 spec:
   components:
     linkerd:
-      version: stable-2.12.0
+      version: stable-2.12.1
