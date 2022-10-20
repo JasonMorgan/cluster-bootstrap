@@ -85,7 +85,7 @@ case "${1}" in
         helm install linkerd-jaeger -n linkerd-jaeger --create-namespace linkerd/linkerd-jaeger --wait
         kubectl -n emojivoto set env --all deploy OC_AGENT_HOST=collector.linkerd-jaeger:55678
         kubectl apply -k github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.1
-        helm install linkerd-gamma /home/jason/git_repos/buoyant/linkerd-golang-extension/charts/linkerd-gamma
+        helm install linkerd-gamma --namespace linkerd-gamma --create-namespace /home/jason/git_repos/buoyant/linkerd-golang-extension/charts/linkerd-gamma
         kubectl apply -f https://raw.githubusercontent.com/fluxcd/flagger/main/artifacts/flagger/crd.yaml
         helm upgrade --install flagger flagger/flagger --namespace=linkerd-viz --set crd.create=false --set meshProvider=linkerd --set metricsServer=http://prometheus:9090
         kubectl apply -k /home/jason/git_repos/jasonmorgan/linkerd-demos/gitops/flux/apps/source/podinfo/
@@ -98,7 +98,7 @@ case "${1}" in
       elif [[ "${c}" == "local" ]]
       then
         kubectl apply -k github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.1
-        helm install linkerd-gamma /home/jason/git_repos/buoyant/linkerd-golang-extension/charts/linkerd-gamma
+        helm install linkerd-gamma --namespace linkerd-gamma --create-namespace /home/jason/git_repos/buoyant/linkerd-golang-extension/charts/linkerd-gamma
         kubectl apply -f https://raw.githubusercontent.com/fluxcd/flagger/main/artifacts/flagger/crd.yaml
         helm upgrade --install flagger flagger/flagger --namespace=linkerd-viz --set crd.create=false --set meshProvider=linkerd --set metricsServer=http://prometheus:9090
         kubectl apply -k /home/jason/git_repos/jasonmorgan/linkerd-demos/gitops/flux/apps/source/podinfo/
