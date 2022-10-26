@@ -14,9 +14,19 @@ apiVersion: getambassador.io/v3alpha1
 kind: Host
 metadata:
   name: emojivoto
-  namespace: default
+  namespace: emojivoto
 spec:
   hostname: emojivoto.civo.59s.io
+  acmeProvider:
+    email: jmorgan@f9vs.com
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Host
+metadata:
+  name: podinfo
+  namespace: podinfo
+spec:
+  hostname: podinfo.civo.59s.io
   acmeProvider:
     email: jmorgan@f9vs.com
 ---
