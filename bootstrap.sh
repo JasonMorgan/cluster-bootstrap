@@ -68,14 +68,21 @@ case "${1}" in
       kubectl wait --timeout=90s --for=condition=available deployment emissary-apiext -n emissary-system
       kubectl scale -n emissary-system deployment emissary-apiext --replicas=1
       helm install -n ambassador --create-namespace edge-stack datawire/edge-stack -f manifests/ambassador/values.yaml --wait
+
+      ### Grafana
+
       helm install grafana -n grafana --create-namespace grafana/grafana \
         -f https://raw.githubusercontent.com/linkerd/linkerd2/main/grafana/values.yaml
+      
+      ### Linkerd Viz
+
       helm install linkerd-viz -n linkerd-viz  --set grafana.url=grafana.grafana:3000 --create-namespace linkerd/linkerd-viz --wait
 
       ### Apps
       
       curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/emojivoto.yml | linkerd inject - | kubectl apply -f -
       kubectl create ns booksapp
+      
       curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/booksapp.yml | linkerd inject - | kubectl apply -n booksapp -f -
       
       ## Create BCloud Config
@@ -84,11 +91,11 @@ case "${1}" in
         helm install linkerd-multicluster -n linkerd-multicluster --create-namespace linkerd/linkerd-multicluster --wait
         helm install linkerd-jaeger -n linkerd-jaeger --create-namespace linkerd/linkerd-jaeger --wait
         kubectl -n emojivoto set env --all deploy OC_AGENT_HOST=collector.linkerd-jaeger:55678
-        kubectl apply -k github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.1
-        helm install linkerd-gamma --namespace linkerd-gamma --create-namespace /home/jason/git_repos/buoyant/linkerd-golang-extension/charts/linkerd-gamma
+        # kubectl apply -k github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.1
+        # helm install linkerd-gamma --namespace linkerd-gamma --create-namespace /home/jason/git_repos/buoyant/linkerd-golang-extension/charts/linkerd-gamma
         kubectl apply -f https://raw.githubusercontent.com/fluxcd/flagger/main/artifacts/flagger/crd.yaml
         helm upgrade --install flagger flagger/flagger --namespace=linkerd-viz --set crd.create=false --set meshProvider=linkerd --set metricsServer=http://prometheus:9090
-        kubectl apply -k /home/jason/git_repos/jasonmorgan/linkerd-demos/gitops/flux/apps/source/podinfo/
+        # kubectl apply -k /home/jason/git_repos/jasonmorgan/linkerd-demos/gitops/flux/apps/source/podinfo/
         kubectl apply -f manifests/buoyant/dataplane-prod.yaml
         kubectl apply -f manifests/buoyant/controlplane-prod.yaml
       elif [[ "${c}" == "dev" || "${c}" == "test" ]]

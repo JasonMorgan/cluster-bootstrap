@@ -17,9 +17,6 @@ for c in "${clusters[@]}"
   # export KUBECONFIG=~/.kube/configs/"${c}"
   civo k8s config "${c}" > ~/.kube/config
 
-  ## Install Viz
-  helm install grafana -n grafana --create-namespace grafana/grafana -f https://raw.githubusercontent.com/linkerd/linkerd2/main/grafana/values.yaml --wait || true
-  linkerd viz install --set grafana.url=grafana.grafana:3000 | kubectl apply -f - || true
   # linkerd check
 
   ## Install mc
@@ -27,7 +24,7 @@ for c in "${clusters[@]}"
   # linkerd check
 
   ## Failover
-  helm install linkerd-failover -n linkerd-failover --create-namespace linkerd/linkerd-failover || true
+  # helm install linkerd-failover -n linkerd-failover --create-namespace linkerd/linkerd-failover || true
 
   ## Allow BCloud
 
