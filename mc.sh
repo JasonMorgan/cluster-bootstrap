@@ -14,26 +14,13 @@ for c in "${clusters[@]}"
   # Load config
   civo k8s config "${c}" > ~/.kube/configs/"${c}"
   chmod 600 ~/.kube/configs/"${c}"
-  # export KUBECONFIG=~/.kube/configs/"${c}"
-  civo k8s config "${c}" > ~/.kube/config
-
-  # linkerd check
-
-  ## Install mc
-  linkerd multicluster install | kubectl apply -f - || true
-  # linkerd check
-
-  ## Failover
-  # helm install linkerd-failover -n linkerd-failover --create-namespace linkerd/linkerd-failover || true
-
-  ## Allow BCloud
-
+  
+  # Allow BCloud
   kubectl apply -f manifests/finalizers/allow-bcloud.yaml
-
   linkerd check
-  # unset KUBECONFIG
+  
 }
-linkerd multicluster link  --kubeconfig ~/.kube/configs/west --cluster-name west | kubectl apply --kubeconfig ~/.kube/configs/east -f -
-linkerd multicluster link  --kubeconfig ~/.kube/configs/east --cluster-name east | kubectl apply --kubeconfig ~/.kube/configs/west -f -
+linkerd multicluster link  --kubeconfig ~/.kube/configs/"${clusters[0]}" --cluster-name "${clusters[0]}" | kubectl apply --kubeconfig ~/.kube/configs/"${clusters[1]}" -f -
+linkerd multicluster link  --kubeconfig ~/.kube/configs/"${clusters[1]}" --cluster-name "${clusters[1]}" | kubectl apply --kubeconfig ~/.kube/configs/"${clusters[0]}" -f -
 
 
