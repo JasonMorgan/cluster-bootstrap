@@ -102,7 +102,7 @@ then
     helm repo update > /dev/null
 
     ## Set command line args
-    linkerd_install=(helm install linkerd-control-plane -n linkerd --version 1.9.3 --set identity.externalCA=true --set identity.issuer.scheme=kubernetes.io/tls linkerd/linkerd-control-plane --wait)
+    linkerd_install=(helm install linkerd-control-plane -n linkerd --version 1.9.3 --set-file identityTrustAnchorsPEM=/home/jason/tmp/ca/root.crt --set-file identity.issuer.tls.crtPEM=/home/jason/tmp/ca/issuer.crt --set-file identity.issuer.tls.keyPEM=/home/jason/tmp/ca/issuer.key linkerd/linkerd-control-plane --wait)
     
     ## Is it a Prod cluster?
     if [[ "${c}" == "prod"* ]]
@@ -112,18 +112,18 @@ then
 
     ## Install Apps
     ### Cert-Manager
-    helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set installCRDs=true --version v1.10.0 --wait
-    helm upgrade --install --namespace cert-manager cert-manager-trust jetstack/cert-manager-trust --wait
+    # helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set installCRDs=true --version v1.10.0 --wait
+    # helm upgrade --install --namespace cert-manager cert-manager-trust jetstack/cert-manager-trust --wait
     kubectl create ns linkerd
     case "${c}" in
       prod*)
-        kubectl apply -f manifests/cert-manager/bootstrap_ca.prod.yaml
+        #kubectl apply -f manifests/cert-manager/bootstrap_ca.prod.yaml
         ;;
       dev)
-        kubectl apply -f manifests/cert-manager/bootstrap_ca.dev.yaml
+        #kubectl apply -f manifests/cert-manager/bootstrap_ca.dev.yaml
         ;;
       *)
-        kubectl apply -f manifests/cert-manager/bootstrap_ca.test.yaml
+        #kubectl apply -f manifests/cert-manager/bootstrap_ca.test.yaml
         ;;
     esac
 
@@ -178,8 +178,8 @@ then
       kubectl -n emojivoto set env --all deploy OC_AGENT_HOST=collector.linkerd-jaeger:55678
       
       ### Install Flagger
-      kubectl apply -f https://raw.githubusercontent.com/fluxcd/flagger/main/artifacts/flagger/crd.yaml
-      helm upgrade --install flagger flagger/flagger --namespace=linkerd-viz --set crd.create=false --set meshProvider=linkerd --set metricsServer=http://prometheus:9090
+      # kubectl apply -f https://raw.githubusercontent.com/fluxcd/flagger/main/artifacts/flagger/crd.yaml
+      # helm upgrade --install flagger flagger/flagger --namespace=linkerd-viz --set crd.create=false --set meshProvider=linkerd --set metricsServer=http://prometheus:9090
       
       ### BCloud Manifests
       kubectl apply -f manifests/buoyant/dataplane-prod.yaml
