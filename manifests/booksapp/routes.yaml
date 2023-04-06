@@ -1,0 +1,137 @@
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: authors-get-route
+  namespace: booksapp
+spec:
+  parentRefs:
+    - name: authors
+      kind: Server
+      group: policy.linkerd.io
+  rules:
+    - matches:
+      - path:
+          value: "/authors.json"
+        method: GET
+      - path:
+          value: "/authors/"
+          type: "PathPrefix"
+        method: GET
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: authors-get-policy
+  namespace: booksapp
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: HTTPRoute
+    name: authors-get-route
+  requiredAuthenticationRefs:
+    - name: authors-get-authn
+      kind: MeshTLSAuthentication
+      group: policy.linkerd.io
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata:
+  name: authors-get-authn
+  namespace: booksapp
+spec:
+  identities:
+    - "books.booksapp.serviceaccount.identity.linkerd.cluster.local"
+    - "webapp.booksapp.serviceaccount.identity.linkerd.cluster.local"
+
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: authors-probe-route
+  namespace: booksapp
+spec:
+  parentRefs:
+    - name: authors
+      kind: Server
+      group: policy.linkerd.io
+  rules:
+    - matches:
+      - path:
+          value: "/ping"
+        method: GET
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: NetworkAuthentication
+metadata:
+  name: authors-probe-authn
+  namespace: booksapp
+spec:
+  networks:
+  - cidr: 0.0.0.0/0
+  - cidr: ::/0
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: authors-probe-policy
+  namespace: booksapp
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: HTTPRoute
+    name: authors-probe-route
+  requiredAuthenticationRefs:
+    - name: authors-probe-authn
+      kind: NetworkAuthentication
+      group: policy.linkerd.io
+
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: authors-modify-route
+  namespace: booksapp
+spec:
+  parentRefs:
+    - name: authors
+      kind: Server
+      group: policy.linkerd.io
+  rules:
+    - matches:
+      - path:
+          value: "/authors/"
+          type: "PathPrefix"
+        method: DELETE
+      - path:
+          value: "/authors/"
+          type: "PathPrefix"
+        method: PUT
+      - path:
+          value: "/authors.json"
+        method: POST
+
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: authors-modify-policy
+  namespace: booksapp
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: HTTPRoute
+    name: authors-modify-route
+  requiredAuthenticationRefs:
+    - name: authors-modify-authn
+      kind: MeshTLSAuthentication
+      group: policy.linkerd.io
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata:
+  name: authors-modify-authn
+  namespace: booksapp
+spec:
+  identities:
+    - "webapp.booksapp.serviceaccount.identity.linkerd.cluster.local"

@@ -140,7 +140,7 @@ then
     
     ### AES
     
-    kubectl apply -f https://app.getambassador.io/yaml/edge-stack/3.1.0/aes-crds.yaml
+    kubectl apply -f https://app.getambassador.io/yaml/edge-stack/3.4.1/aes-crds.yaml
     kubectl wait --timeout=90s --for=condition=available deployment emissary-apiext -n emissary-system
     kubectl scale -n emissary-system deployment emissary-apiext --replicas=1
     helm install -n ambassador --create-namespace edge-stack datawire/edge-stack -f manifests/ambassador/values.yaml --wait

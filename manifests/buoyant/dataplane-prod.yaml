@@ -46,6 +46,15 @@ spec:
 apiVersion: linkerd.buoyant.io/v1alpha1
 kind: DataPlane
 metadata:
+  name: linkerd-smi
+  namespace: linkerd-smi
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
   name: linkerd-multicluster
   namespace: linkerd-multicluster
 spec:
