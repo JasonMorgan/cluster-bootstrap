@@ -1,0 +1,99 @@
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: books-get-route
+  namespace: booksapp
+spec:
+  parentRefs:
+    - name: books
+      kind: Server
+      group: policy.linkerd.io
+  rules:
+    - matches:
+      - path:
+          value: "/"
+        method: GET
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: books-get-policy
+  namespace: booksapp
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: HTTPRoute
+    name: books-get-route
+  requiredAuthenticationRefs:
+    - name: books-get-authn
+      kind: MeshTLSAuthentication
+      group: policy.linkerd.io
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata:
+  name: books-get-authn
+  namespace: booksapp
+spec:
+  identities:
+    - "authors.booksapp.serviceaccount.identity.linkerd.cluster.local"
+    - "webapp.booksapp.serviceaccount.identity.linkerd.cluster.local"
+
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: probe-route
+  namespace: booksapp
+spec:
+  parentRefs:
+    - name: books
+      kind: Server
+      group: policy.linkerd.io
+  rules:
+    - matches:
+      - path:
+          value: "/ping"
+        method: GET
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: books-modify-route
+  namespace: booksapp
+spec:
+  parentRefs:
+    - name: books
+      kind: Server
+      group: policy.linkerd.io
+  rules:
+    - matches:
+      - path:
+          value: "/"
+      
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: books-modify-policy
+  namespace: booksapp
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: HTTPRoute
+    name: books-modify-route
+  requiredAuthenticationRefs:
+    - name: books-modify-authn
+      kind: MeshTLSAuthentication
+      group: policy.linkerd.io
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata:
+  name: books-modify-authn
+  namespace: booksapp
+spec:
+  identities:
+    - "webapp.booksapp.serviceaccount.identity.linkerd.cluster.local"
+    - "authors.booksapp.serviceaccount.identity.linkerd.cluster.local"

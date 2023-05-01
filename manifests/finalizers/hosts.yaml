@@ -33,6 +33,16 @@ spec:
 apiVersion: getambassador.io/v3alpha1
 kind: Host
 metadata:
+  name: booksapp
+  namespace: booksapp
+spec:
+  hostname: booksapp.civo.59s.io
+  acmeProvider:
+    email: jmorgan@f9vs.com
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Host
+metadata:
   name: wildcard
   namespace: default
 spec:

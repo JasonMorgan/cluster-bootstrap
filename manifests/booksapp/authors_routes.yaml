@@ -18,6 +18,10 @@ spec:
           value: "/authors/"
           type: "PathPrefix"
         method: GET
+      - path:
+          value: "/"
+          type: "PathPrefix"
+        method: GET
 ---
 apiVersion: policy.linkerd.io/v1alpha1
 kind: AuthorizationPolicy
@@ -64,7 +68,7 @@ spec:
 apiVersion: policy.linkerd.io/v1alpha1
 kind: NetworkAuthentication
 metadata:
-  name: authors-probe-authn
+  name: probe-authn
   namespace: booksapp
 spec:
   networks:
@@ -74,15 +78,15 @@ spec:
 apiVersion: policy.linkerd.io/v1alpha1
 kind: AuthorizationPolicy
 metadata:
-  name: authors-probe-policy
+  name: probe-policy
   namespace: booksapp
 spec:
   targetRef:
     group: policy.linkerd.io
     kind: HTTPRoute
-    name: authors-probe-route
+    name: probe-route
   requiredAuthenticationRefs:
-    - name: authors-probe-authn
+    - name: probe-authn
       kind: NetworkAuthentication
       group: policy.linkerd.io
 
@@ -110,6 +114,8 @@ spec:
       - path:
           value: "/authors.json"
         method: POST
+      - path:
+          value: "/"
 
 ---
 apiVersion: policy.linkerd.io/v1alpha1
@@ -135,3 +141,4 @@ metadata:
 spec:
   identities:
     - "webapp.booksapp.serviceaccount.identity.linkerd.cluster.local"
+    - "books.booksapp.serviceaccount.identity.linkerd.cluster.local"

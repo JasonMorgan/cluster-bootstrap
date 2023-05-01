@@ -29,6 +29,17 @@ spec:
 apiVersion: getambassador.io/v3alpha1
 kind: Mapping
 metadata:
+  name: booksapp
+  namespace: default
+spec:
+  prefix: /
+  service: webapp.booksapp:7000
+  rewrite: ""
+  host: booksapp.civo.59s.io
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
   name: podinfo
   namespace: default
 spec:
