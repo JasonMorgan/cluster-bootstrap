@@ -1,3 +1,4 @@
+---
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
@@ -16,13 +17,14 @@ spec:
   isCA: true
   commonName: identity.linkerd.cluster.local
   secretName: linkerd-identity-issuer
-  duration: 3000h
+  duration: 1080h
   privateKey:
     algorithm: ECDSA
     size: 256
   issuerRef:
     name: linkerd-trust-anchor
     kind: Issuer
+    group: cert-manager.io
   dnsNames:
   - identity.linkerd.cluster.local
   usages:

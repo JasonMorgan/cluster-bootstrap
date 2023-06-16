@@ -21,6 +21,7 @@ case "${1}" in
     helm repo add flagger https://flagger.app
     helm repo add jetstack https://charts.jetstack.io
     helm repo add linkerd-smi https://linkerd.github.io/linkerd-smi
+    helm repo add datawire https://app.getambassador.io
 
     ## Begin our creationloop
     for c in "${clusters[@]}"
@@ -49,11 +50,11 @@ case "${1}" in
       case "${env}" in
         civo)
           kubectl ctx -u
-          kubectl config delete-context "${c}" || true
-          kubectl config delete-cluster "${c}" || true
-          kubectl config delete-user "${c}" || true
+          kubectl config delete-context "${c}"  &> /dev/null || true
+          kubectl config delete-cluster "${c}"  &> /dev/null || true
+          kubectl config delete-user "${c}"  &> /dev/null || true
           civo k8s create "${c}" -n $number -s "${size}" -r Traefik-v2-nodeport -w # || true
-          civo k8s config -sym "${c}" || true
+          civo k8s config -sy "${c}" || true
           # sleep 60
           ;;
         local)
@@ -94,7 +95,7 @@ then
   for c in "${clusters[@]}"
   {
     ## Set context
-    civo k8s config "${c}" -sym
+    civo k8s config "${c}" -sy
     kubectl ctx "${c}"
     kubectl ns default
 
@@ -102,37 +103,45 @@ then
     helm repo update > /dev/null
 
     ## Set command line args
-    linkerd_install=(helm install linkerd-control-plane -n linkerd --version 1.9.3 --set identity.externalCA=true --set identity.issuer.scheme=kubernetes.io/tls linkerd/linkerd-control-plane --wait)
+    linkerd_install=(helm install linkerd-control-plane -n linkerd --set identity.issuer.scheme=kubernetes.io/tls --version=1.12.3 linkerd/linkerd-control-plane --wait)
     
-    ## Is it a Prod cluster?
-    if [[ "${c}" == "prod"* ]]
-    then
-      linkerd_install+=(-f manifests/linkerd/values-ha.yaml)
-    fi
-
     ## Install Apps
     ### Cert-Manager
-    helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set installCRDs=true --version v1.10.0 --wait
-    helm upgrade --install --namespace cert-manager cert-manager-trust jetstack/cert-manager-trust --wait
+    helm install cert-manager jetstack/cert-manager --namespace cert-manager --version v1.12.0 --create-namespace --set installCRDs=true --wait
     kubectl create ns linkerd
     case "${c}" in
       prod*)
+        kubectl create secret tls linkerd-trust-anchor \
+          --cert=/home/jason/tmp/ca/ca.prod.crt \
+          --key=/home/jason/tmp/ca/ca.prod.key \
+          --namespace=linkerd
         kubectl apply -f manifests/cert-manager/bootstrap_ca.prod.yaml
+        linkerd_install+=(--set-file identityTrustAnchorsPEM=/home/jason/tmp/ca/ca.prod.crt)
+        linkerd_install+=(-f manifests/linkerd/values-ha.yaml)
         ;;
       dev)
+        kubectl create secret tls linkerd-trust-anchor \
+          --cert=/home/jason/tmp/ca/ca.dev.crt \
+          --key=/home/jason/tmp/ca/ca.dev.key \
+          --namespace=linkerd
         kubectl apply -f manifests/cert-manager/bootstrap_ca.dev.yaml
+        linkerd_install+=(--set-file identityTrustAnchorsPEM=/home/jason/tmp/ca/ca.dev.crt)
         ;;
       *)
+        kubectl create secret tls linkerd-trust-anchor \
+          --cert=/home/jason/tmp/ca/ca.test.crt \
+          --key=/home/jason/tmp/ca/ca.test.key \
+          --namespace=linkerd
         kubectl apply -f manifests/cert-manager/bootstrap_ca.test.yaml
+        linkerd_install+=(--set-file identityTrustAnchorsPEM=/home/jason/tmp/ca/ca.test.crt)
         ;;
     esac
 
-
     ### Linkerd
-    helm install linkerd-crds linkerd/linkerd-crds \
+    helm install linkerd-crds --version 1.6.1 linkerd/linkerd-crds \
       -n linkerd --wait
     "${linkerd_install[@]}"
-    /home/jason/.linkerd2/bin/linkerd-stable-2.12.1 check
+    linkerd check
     
     ### BCloud
 
@@ -140,7 +149,7 @@ then
     
     ### AES
     
-    kubectl apply -f https://app.getambassador.io/yaml/edge-stack/3.4.1/aes-crds.yaml
+    kubectl apply -f https://app.getambassador.io/yaml/edge-stack/3.6.0/aes-crds.yaml
     kubectl wait --timeout=90s --for=condition=available deployment emissary-apiext -n emissary-system
     kubectl scale -n emissary-system deployment emissary-apiext --replicas=1
     helm install -n ambassador --create-namespace edge-stack datawire/edge-stack -f manifests/ambassador/values.yaml --wait
