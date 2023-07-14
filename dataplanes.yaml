@@ -1,0 +1,99 @@
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: default
+  namespace: default
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: kube-system
+  namespace: kube-system
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: kube-public
+  namespace: kube-public
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: kube-node-lease
+  namespace: kube-node-lease
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: cert-manager
+  namespace: cert-manager
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: linkerd
+  namespace: linkerd
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: buoyant-cloud
+  namespace: buoyant-cloud
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: emissary-system
+  namespace: emissary-system
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: ambassador
+  namespace: ambassador
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: emojivoto
+  namespace: emojivoto
+spec:
+  workloadSelector:
+    matchLabels: {}
+---
+apiVersion: linkerd.buoyant.io/v1alpha1
+kind: DataPlane
+metadata:
+  name: booksapp
+  namespace: booksapp
+spec:
+  workloadSelector:
+    matchLabels: {}

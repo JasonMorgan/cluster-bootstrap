@@ -1,0 +1,170 @@
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: Server
+metadata:
+  namespace: booksapp
+  name: linkerd-admin
+spec:
+  podSelector:
+    matchLabels: {}
+  port: linkerd-admin
+  proxyProtocol: HTTP/2
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: Server
+metadata:
+  namespace: booksapp
+  name: authors
+  labels:
+    app: authors
+    app.kubernetes.io/part-of: booksapp
+    project: booksapp
+spec:
+  podSelector:
+    matchLabels:
+      app: authors
+      project: booksapp
+  port: service
+  proxyProtocol: HTTP/1
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: Server
+metadata:
+  namespace: booksapp
+  name: books
+  labels:
+    app: books
+    app.kubernetes.io/part-of: booksapp
+    project: booksapp
+spec:
+  podSelector:
+    matchLabels:
+      app: books
+      project: booksapp
+  port: service
+  proxyProtocol: HTTP/1
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: Server
+metadata:
+  namespace: booksapp
+  name: webapp
+  labels:
+    app: webapp
+    app.kubernetes.io/part-of: booksapp
+    project: booksapp
+spec:
+  podSelector:
+    matchLabels:
+      app: webapp
+      project: booksapp
+  port: service
+  proxyProtocol: HTTP/1
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-webapp
+  namespace: booksapp
+  labels:
+    app.kubernetes.io/part-of: booksapp
+    project: booksapp
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: Server
+    name: webapp
+  requiredAuthenticationRefs:
+    - name: traffic
+      kind: MeshTLSAuthentication
+      group: policy.linkerd.io
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata:
+  name: traffic
+  namespace: booksapp
+spec:
+  identities:
+    - "traffic.booksapp.serviceaccount.identity.linkerd.cluster.local"
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-authors
+  namespace: booksapp
+  labels:
+    app.kubernetes.io/part-of: booksapp
+    project: booksapp
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: Server
+    name: authors
+  requiredAuthenticationRefs:
+    - name: webapp-books
+      kind: MeshTLSAuthentication
+      group: policy.linkerd.io
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata:
+  name: webapp-books
+  namespace: booksapp
+spec:
+  identities:
+    - "webapp.booksapp.serviceaccount.identity.linkerd.cluster.local"
+    - "books.booksapp.serviceaccount.identity.linkerd.cluster.local"
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-books
+  namespace: booksapp
+  labels:
+    app.kubernetes.io/part-of: booksapp
+    project: booksapp
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: Server
+    name: books
+  requiredAuthenticationRefs:
+    - name: webapp-authors
+      kind: MeshTLSAuthentication
+      group: policy.linkerd.io
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata:
+  name: webapp-authors
+  namespace: booksapp
+spec:
+  identities:
+    - "webapp.booksapp.serviceaccount.identity.linkerd.cluster.local"
+    - "authors.booksapp.serviceaccount.identity.linkerd.cluster.local"
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-viz
+  namespace: booksapp
+spec:
+  targetRef:
+    kind: Namespace
+    name: booksapp
+  requiredAuthenticationRefs:
+    - name: linkerd-viz
+      kind: MeshTLSAuthentication
+      group: policy.linkerd.io
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata:
+  name: linkerd-viz
+  namespace: booksapp
+spec:
+  identities:
+    - "tap.linkerd-viz.serviceaccount.identity.linkerd.cluster.local"
+    - "prometheus.linkerd-viz.serviceaccount.identity.linkerd.cluster.local"
+    - "*.buoyant-cloud.serviceaccount.identity.linkerd.cluster.local"
