@@ -22,7 +22,8 @@ case "${1}" in
     helm repo add jetstack https://charts.jetstack.io
     helm repo add linkerd-smi https://linkerd.github.io/linkerd-smi
     helm repo add datawire https://app.getambassador.io
-
+    helm repo add grafana https://grafana.github.io/helm-charts
+    
     ## Begin our creationloop
     for c in "${clusters[@]}"
     {
@@ -112,28 +113,28 @@ then
     case "${c}" in
       prod*)
         kubectl create secret tls linkerd-trust-anchor \
-          --cert=/home/jason/tmp/ca/ca.prod.crt \
-          --key=/home/jason/tmp/ca/ca.prod.key \
+          --cert=secrets/ca.prod.crt \
+          --key=secrets/ca.prod.key \
           --namespace=linkerd
         kubectl apply -f manifests/cert-manager/bootstrap_ca.prod.yaml
-        linkerd_install+=(--set-file identityTrustAnchorsPEM=/home/jason/tmp/ca/ca.prod.crt)
+        linkerd_install+=(--set-file identityTrustAnchorsPEM=secrets/ca.prod.crt)
         linkerd_install+=(-f manifests/linkerd/values-ha.yaml)
         ;;
       dev)
         kubectl create secret tls linkerd-trust-anchor \
-          --cert=/home/jason/tmp/ca/ca.dev.crt \
-          --key=/home/jason/tmp/ca/ca.dev.key \
+          --cert=secrets/ca.dev.crt \
+          --key=secrets/ca.dev.key \
           --namespace=linkerd
         kubectl apply -f manifests/cert-manager/bootstrap_ca.dev.yaml
-        linkerd_install+=(--set-file identityTrustAnchorsPEM=/home/jason/tmp/ca/ca.dev.crt)
+        linkerd_install+=(--set-file identityTrustAnchorsPEM=secrets/ca.dev.crt)
         ;;
       *)
         kubectl create secret tls linkerd-trust-anchor \
-          --cert=/home/jason/tmp/ca/ca.test.crt \
-          --key=/home/jason/tmp/ca/ca.test.key \
+          --cert=secrets/ca.test.crt \
+          --key=secrets/ca.test.key \
           --namespace=linkerd
         kubectl apply -f manifests/cert-manager/bootstrap_ca.test.yaml
-        linkerd_install+=(--set-file identityTrustAnchorsPEM=/home/jason/tmp/ca/ca.test.crt)
+        linkerd_install+=(--set-file identityTrustAnchorsPEM=secrets/ca.test.crt)
         ;;
     esac
 
@@ -188,7 +189,7 @@ then
       
       ### Install Flagger
       kubectl apply -f https://raw.githubusercontent.com/fluxcd/flagger/main/artifacts/flagger/crd.yaml
-      helm upgrade --install flagger flagger/flagger --namespace=linkerd-viz --set crd.create=false --set meshProvider=linkerd --set metricsServer=http://prometheus:9090
+      helm upgrade --install flagger flagger/flagger --namespace=linkerd-viz --set crd.create=false --set linkerdAuthPolicy.create=true --set meshProvider=linkerd --set metricsServer=http://prometheus:9090
       
       ### BCloud Manifests
       kubectl apply -f manifests/buoyant/dataplane-prod.yaml
