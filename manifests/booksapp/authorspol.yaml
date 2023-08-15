@@ -34,25 +34,14 @@ spec:
     kind: HTTPRoute
     name: authors-get-route
   requiredAuthenticationRefs:
-    - name: authors-get-authn
+    - name: webapp-books
       kind: MeshTLSAuthentication
       group: policy.linkerd.io
----
-apiVersion: policy.linkerd.io/v1alpha1
-kind: MeshTLSAuthentication
-metadata:
-  name: authors-get-authn
-  namespace: booksapp
-spec:
-  identities:
-    - "books.booksapp.serviceaccount.identity.linkerd.cluster.local"
-    - "webapp.booksapp.serviceaccount.identity.linkerd.cluster.local"
-
 ---
 apiVersion: policy.linkerd.io/v1beta1
 kind: HTTPRoute
 metadata:
-  name: authors-probe-route
+  name: probe-route
   namespace: booksapp
 spec:
   parentRefs:
@@ -89,7 +78,6 @@ spec:
     - name: probe-authn
       kind: NetworkAuthentication
       group: policy.linkerd.io
-
 ---
 apiVersion: policy.linkerd.io/v1beta1
 kind: HTTPRoute
@@ -116,7 +104,6 @@ spec:
         method: POST
       - path:
           value: "/"
-
 ---
 apiVersion: policy.linkerd.io/v1alpha1
 kind: AuthorizationPolicy
@@ -129,16 +116,6 @@ spec:
     kind: HTTPRoute
     name: authors-modify-route
   requiredAuthenticationRefs:
-    - name: authors-modify-authn
+    - name: webapp-books
       kind: MeshTLSAuthentication
       group: policy.linkerd.io
----
-apiVersion: policy.linkerd.io/v1alpha1
-kind: MeshTLSAuthentication
-metadata:
-  name: authors-modify-authn
-  namespace: booksapp
-spec:
-  identities:
-    - "webapp.booksapp.serviceaccount.identity.linkerd.cluster.local"
-    - "books.booksapp.serviceaccount.identity.linkerd.cluster.local"

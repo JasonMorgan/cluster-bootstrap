@@ -23,7 +23,7 @@ case "${1}" in
     helm repo add linkerd-smi https://linkerd.github.io/linkerd-smi
     helm repo add datawire https://app.getambassador.io
     helm repo add grafana https://grafana.github.io/helm-charts
-    
+
     ## Begin our creationloop
     for c in "${clusters[@]}"
     {
