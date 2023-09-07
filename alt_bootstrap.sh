@@ -14,13 +14,6 @@ case "${1}" in
     then
       export KUBECONFIG=~/.kube/config
     fi
-    ## Add repos
-
-    helm repo add linkerd-buoyant https://helm.buoyant.cloud
-    helm repo add linkerd https://helm.linkerd.io/stable
-    helm repo add flagger https://flagger.app
-    helm repo add jetstack https://charts.jetstack.io
-    helm repo add linkerd-smi https://linkerd.github.io/linkerd-smi
 
     ## Begin our creationloop
     for c in "${clusters[@]}"
@@ -98,17 +91,7 @@ then
     kubectl ctx "${c}"
     kubectl ns default
 
-    ## Ready helm repos
-    helm repo update > /dev/null
-
-    ## Set command line args
-    linkerd_install=(helm install linkerd-control-plane -n linkerd --version 1.9.3 --set-file identityTrustAnchorsPEM=/home/jason/tmp/ca/root.crt --set-file identity.issuer.tls.crtPEM=/home/jason/tmp/ca/issuer.crt --set-file identity.issuer.tls.keyPEM=/home/jason/tmp/ca/issuer.key linkerd/linkerd-control-plane --wait)
-    
-    ## Is it a Prod cluster?
-    if [[ "${c}" == "prod"* ]]
-    then
-      linkerd_install+=(-f manifests/linkerd/values-ha.yaml)
-    fi
+    flux install
 
     ## Install Apps
     ### Cert-Manager

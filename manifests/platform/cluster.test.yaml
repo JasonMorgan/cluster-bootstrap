@@ -1,0 +1,104 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
+kind: Kustomization
+metadata:
+  name: cert-manager
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  path: ./gitops/flux/runtime/source/cert-manager
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: gitops
+  validation: client
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2beta1
+      kind: HelmRelease
+      name: cert-manager
+      namespace: cert-manager
+    - apiVersion: cert-manager.io/v1
+      kind: Certificate
+      name: linkerd-identity-issuer
+      namespace: linkerd
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
+kind: Kustomization
+metadata:
+  name: linkerd
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  path: ./gitops/flux/runtime/source/linkerd
+  dependsOn:
+    - name: cert-manager
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: gitops
+  validation: client
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2beta1
+      kind: HelmRelease
+      name: linkerd-control-plane
+      namespace: linkerd
+    - apiVersion: helm.toolkit.fluxcd.io/v2beta1
+      kind: HelmRelease
+      name: linkerd-crds
+      namespace: linkerd
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
+kind: Kustomization
+metadata:
+  name: emissary
+  namespace: flux-system
+spec:
+  interval: 3m0s
+  path: ./gitops/flux/runtime/source/emissary
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: gitops
+  validation: client
+  healthChecks:
+    - kind: Deployment
+      name: emissary-apiext
+      namespace: emissary-system
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
+kind: Kustomization
+metadata:
+  name: ambassador
+  namespace: flux-system
+spec:
+  dependsOn:
+  - name: emissary
+  interval: 3m0s
+  path: ./gitops/flux/runtime/source/ambassador
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: gitops
+  validation: client
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2beta1
+      kind: HelmRelease
+      name: ambassador-edge-stack
+      namespace: edge-stack
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
+kind: Kustomization
+metadata:
+  name: finalizers
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  path: ./gitops/flux/runtime/source/finalizers
+  dependsOn:
+    - name: ambassador
+    - name: cert-manager
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: gitops
+  validation: client

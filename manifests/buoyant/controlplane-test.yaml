@@ -1,8 +1,27 @@
+---
 apiVersion: linkerd.buoyant.io/v1alpha1
 kind: ControlPlane
 metadata:
-  name: cp-update
+  name: linkerd-control-plane
 spec:
   components:
     linkerd:
-      version: stable-2.13.4
+      version: enterprise-2.13.6-1
+      controlPlaneConfig:
+        identityTrustAnchorsPEM: |
+          -----BEGIN CERTIFICATE-----
+          MIIBjTCCATOgAwIBAgIQVuD3YqS3/igmsILjKzlUsTAKBggqhkjOPQQDAjAlMSMw
+          IQYDVQQDExpyb290LmxpbmtlcmQuY2x1c3Rlci5sb2NhbDAeFw0yMzA4MTAxMjIy
+          NDhaFw0zMzA4MDcxMjIyNDhaMCUxIzAhBgNVBAMTGnJvb3QubGlua2VyZC5jbHVz
+          dGVyLmxvY2FsMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEF5/1+ZAJI+ogaiHE
+          zPqIennpTuNKSCXxdj/rzadw89jQI2RGki0Zlbgw7aO3yFZyI9y7FIxf1QrhhYae
+          RsABy6NFMEMwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQEwHQYD
+          VR0OBBYEFAlBPTiABuAlKQ/8+MzaOMFHO2xSMAoGCCqGSM49BAMCA0gAMEUCIEyo
+          xHoxKdqj+wbOpENfmOdNa2GVbys03na07Ldi/n2WAiEAqo+/y0XCNUU427moUUgm
+          i02fRiph/THJiE/TYNO7Kz0=
+          -----END CERTIFICATE-----
+        imagePullSecrets:
+        - name: buoyant-registry-secret
+        identity:
+          issuer:
+            scheme: kubernetes.io/tls

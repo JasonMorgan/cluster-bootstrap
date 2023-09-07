@@ -102,14 +102,13 @@ then
 
     ## Ready helm repos
     helm repo update > /dev/null
-
-    ## Set command line args
-    linkerd_install=(helm install linkerd-control-plane -n linkerd --set identity.issuer.scheme=kubernetes.io/tls --version=1.12.3 linkerd/linkerd-control-plane --wait)
     
     ## Install Apps
     ### Cert-Manager
     helm install cert-manager jetstack/cert-manager --namespace cert-manager --version v1.12.0 --create-namespace --set installCRDs=true --wait
     kubectl create ns linkerd
+    kubectl create ns buoyant-cloud
+    kubectl apply -f secrets/buoyant-registry-secret.yaml
     case "${c}" in
       prod*)
         kubectl create secret tls linkerd-trust-anchor \
@@ -137,17 +136,34 @@ then
         linkerd_install+=(--set-file identityTrustAnchorsPEM=secrets/ca.test.crt)
         ;;
     esac
-
-    ### Linkerd
-    helm install linkerd-crds --version 1.6.1 linkerd/linkerd-crds \
-      -n linkerd --wait
-    "${linkerd_install[@]}"
-    linkerd check
     
     ### BCloud
 
-    helm install --create-namespace --namespace buoyant-cloud  --values manifests/buoyant/values.yaml --set managed=true --set metadata.agentName="${c}" linkerd-buoyant linkerd-buoyant/linkerd-buoyant
+    helm install linkerd-buoyant \
+      --namespace buoyant-cloud \
+      --set controlPlaneOperator.helmDockerConfigJSONSecret=buoyant-registry-secret \
+      --set metadata.agentName="${c}" \
+      --values manifests/buoyant/values.yaml \
+    linkerd-buoyant/linkerd-buoyant
     
+    ### Linkerd
+
+    case "${c}" in
+      prod*)
+        kubectl apply -f manifests/buoyant/controlplane-prod.yaml
+        ;;
+      dev)
+        kubectl apply -f manifests/buoyant/controlplane-dev.yaml
+        ;;
+      *)
+        kubectl apply -f manifests/buoyant/controlplane-test.yaml
+        ;;
+    esac
+    sleep 120
+    kubectl wait --for=condition=available deployment linkerd-control-plane-validator -n buoyant-cloud
+    kubectl wait --for=condition=available deployment linkerd-control-plane-operator -n buoyant-cloud
+    linkerd check
+
     ### AES
     
     kubectl apply -f https://app.getambassador.io/yaml/edge-stack/3.7.2/aes-crds.yaml
@@ -199,22 +215,10 @@ then
     then
       ### BCloud Manifests
       kubectl apply -f manifests/buoyant/dataplane.yaml
-      kubectl apply -f "manifests/buoyant/controlplane-${c}.yaml" || true
-
-    elif [[ "${c}" == "local" ]]
-    then
-      kubectl apply -k github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.1
-      helm install linkerd-gamma --namespace linkerd-gamma --create-namespace /home/jason/git_repos/buoyant/linkerd-golang-extension/charts/linkerd-gamma
-      kubectl apply -f https://raw.githubusercontent.com/fluxcd/flagger/main/artifacts/flagger/crd.yaml
-      helm upgrade --install flagger flagger/flagger --namespace=linkerd-viz --set crd.create=false --set meshProvider=linkerd --set metricsServer=http://prometheus:9090
-      kubectl apply -k /home/jason/git_repos/jasonmorgan/linkerd-demos/gitops/flux/apps/source/podinfo/
-      kubectl apply -f manifests/buoyant/dataplane-prod.yaml
-      kubectl apply -f manifests/buoyant/controlplane-prod.yaml
     else
       kubectl apply -f manifests/buoyant/dataplane.yaml
       kubectl apply -f "manifests/buoyant/controlplane.yaml"
     fi
-
     ## Apply policy objects
     kubectl apply -f manifests/booksapp
     kubectl apply -f manifests/emojivoto
