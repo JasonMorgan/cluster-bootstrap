@@ -10,15 +10,15 @@ spec:
       controlPlaneConfig:
         identityTrustAnchorsPEM: |
           -----BEGIN CERTIFICATE-----
-          MIIBjTCCATOgAwIBAgIQatjNdkWplcMUfFPtLCPLIjAKBggqhkjOPQQDAjAlMSMw
-          IQYDVQQDExpyb290LmxpbmtlcmQuY2x1c3Rlci5sb2NhbDAeFw0yMzA4MTAxMjIy
-          MjFaFw0zMzA4MDcxMjIyMjFaMCUxIzAhBgNVBAMTGnJvb3QubGlua2VyZC5jbHVz
-          dGVyLmxvY2FsMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEcu88RWneiWCn9ixc
-          lVIojOoVRuvsoCWecRFoi91F+xCypXfpp9UCoB0b9reDynmtJqN7Jl0Wuae/XPs6
-          ENO0qaNFMEMwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQEwHQYD
-          VR0OBBYEFKCl8dETFBgGI5jJ2+pLZE5pnsLLMAoGCCqGSM49BAMCA0gAMEUCICM9
-          rqaObEVv87VNuKUGVxsTCpJp2iW8gZ4CLKF8VFsbAiEA0VUI7JutROf0E0xvNifV
-          t0lqX2kWgOMP8a9pZtFOJIg=
+          MIIBjzCCATSgAwIBAgIRAPnQ5cdIShJyjjXyb8rVaJwwCgYIKoZIzj0EAwIwJTEj
+          MCEGA1UEAxMacm9vdC5saW5rZXJkLmNsdXN0ZXIubG9jYWwwHhcNMjMwOTA3MTM0
+          NzA3WhcNMzMwOTA0MTM0NzA3WjAlMSMwIQYDVQQDExpyb290LmxpbmtlcmQuY2x1
+          c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABOgCT0ne+9hZV2YG
+          9tpwSX84VZkNwI10sWqx8l5jS01rfObvBBKjOB0N1pghw7YQfYdhQy+iWY5VQsJh
+          +tUxX8ijRTBDMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgEBMB0G
+          A1UdDgQWBBSh2HpxhbK8vQI5CzquGfPAgd4k1jAKBggqhkjOPQQDAgNJADBGAiEA
+          mWx9+GSYe/ieR+nzNHGJhAgN71c6itaiHmFD+I8io/UCIQC5ZLTK7sACEBS4R6u9
+          cRBKMUUh4p6gTRqcU9wsD7NtPg==
           -----END CERTIFICATE-----
         imagePullSecrets:
         - name: buoyant-registry-secret

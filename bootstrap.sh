@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/bin/bash
 set -e
 
 if [ -z "${2}" ]
@@ -105,16 +105,16 @@ then
     
     ## Install Apps
     ### Cert-Manager
-    helm install cert-manager jetstack/cert-manager --namespace cert-manager --version v1.12.0 --create-namespace --set installCRDs=true --wait
-    kubectl create ns linkerd
-    kubectl create ns buoyant-cloud
+    helm upgrade -i cert-manager jetstack/cert-manager --namespace cert-manager --version v1.12.0 --create-namespace --set installCRDs=true --wait
+    kubectl create ns linkerd || true
+    kubectl create ns linkerd-buoyant || true
     kubectl apply -f secrets/buoyant-registry-secret.yaml
     case "${c}" in
       prod*)
         kubectl create secret tls linkerd-trust-anchor \
           --cert=secrets/ca.prod.crt \
           --key=secrets/ca.prod.key \
-          --namespace=linkerd
+          --namespace=linkerd || true
         kubectl apply -f manifests/cert-manager/bootstrap_ca.prod.yaml
         linkerd_install+=(--set-file identityTrustAnchorsPEM=secrets/ca.prod.crt)
         linkerd_install+=(-f manifests/linkerd/values-ha.yaml)
@@ -123,7 +123,7 @@ then
         kubectl create secret tls linkerd-trust-anchor \
           --cert=secrets/ca.dev.crt \
           --key=secrets/ca.dev.key \
-          --namespace=linkerd
+          --namespace=linkerd || true
         kubectl apply -f manifests/cert-manager/bootstrap_ca.dev.yaml
         linkerd_install+=(--set-file identityTrustAnchorsPEM=secrets/ca.dev.crt)
         ;;
@@ -131,16 +131,22 @@ then
         kubectl create secret tls linkerd-trust-anchor \
           --cert=secrets/ca.test.crt \
           --key=secrets/ca.test.key \
-          --namespace=linkerd
+          --namespace=linkerd || true
         kubectl apply -f manifests/cert-manager/bootstrap_ca.test.yaml
         linkerd_install+=(--set-file identityTrustAnchorsPEM=secrets/ca.test.crt)
         ;;
     esac
     
+    ### Apps
+    kubectl create ns emojivoto || true
+    kubectl create ns booksapp || true
+    kubectl create ns ambassador || true
+    
+
     ### BCloud
 
-    helm install linkerd-buoyant \
-      --namespace buoyant-cloud \
+    helm upgrade -i linkerd-buoyant \
+      --namespace linkerd-buoyant \
       --set controlPlaneOperator.helmDockerConfigJSONSecret=buoyant-registry-secret \
       --set metadata.agentName="${c}" \
       --values manifests/buoyant/values.yaml \
@@ -151,73 +157,66 @@ then
     case "${c}" in
       prod*)
         kubectl apply -f manifests/buoyant/controlplane-prod.yaml
+        kubectl apply -f manifests/buoyant/buoyant-cloud-agent.yaml
+        kubectl apply -f manifests/buoyant/dataplane.yaml
         ;;
       dev)
         kubectl apply -f manifests/buoyant/controlplane-dev.yaml
+        kubectl apply -f manifests/buoyant/dataplane.yaml
         ;;
       *)
         kubectl apply -f manifests/buoyant/controlplane-test.yaml
+        kubectl apply -f manifests/buoyant/dataplane.yaml
         ;;
     esac
     sleep 120
-    kubectl wait --for=condition=available deployment linkerd-control-plane-validator -n buoyant-cloud
-    kubectl wait --for=condition=available deployment linkerd-control-plane-operator -n buoyant-cloud
+    kubectl wait --for=condition=available deployment linkerd-control-plane-validator -n linkerd-buoyant
+    kubectl wait --for=condition=available deployment linkerd-control-plane-operator -n linkerd-buoyant
     linkerd check
+
+    ### Install Apps
+    curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/emojivoto.yml | linkerd inject - | kubectl apply -f -
+    curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/booksapp.yml | linkerd inject - | kubectl apply -n booksapp -f -
 
     ### AES
     
-    kubectl apply -f https://app.getambassador.io/yaml/edge-stack/3.7.2/aes-crds.yaml
+    kubectl apply -f https://app.getambassador.io/yaml/edge-stack/3.8.0/aes-crds.yaml
     kubectl wait --timeout=90s --for=condition=available deployment emissary-apiext -n emissary-system
     kubectl scale -n emissary-system deployment emissary-apiext --replicas=1
-    helm install -n ambassador --create-namespace edge-stack datawire/edge-stack -f manifests/ambassador/values.yaml --wait
+    helm upgrade -i -n ambassador edge-stack datawire/edge-stack -f manifests/ambassador/values.yaml -f secrets/aes.yaml --wait
 
-    ### Apps
     
-    curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/emojivoto.yml | linkerd inject - | kubectl apply -f -
-
-    kubectl create ns booksapp
-    curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/booksapp.yml | linkerd inject - | kubectl apply -n booksapp -f -
     
     ## Create BCloud Config
     if [[ "${c}" == "prod"* ]]
     then
       ### Grafana
 
-      helm install grafana -n grafana --create-namespace grafana/grafana \
+      helm upgrade -i grafana -n grafana --create-namespace grafana/grafana \
       -f https://raw.githubusercontent.com/linkerd/linkerd2/main/grafana/values.yaml
     
       ### Linkerd Viz
 
-      helm install linkerd-viz -n linkerd-viz  --set grafana.url=grafana.grafana:3000 --create-namespace linkerd/linkerd-viz --wait
+      helm upgrade -i linkerd-viz -n linkerd-viz  --set grafana.url=grafana.grafana:3000 --create-namespace linkerd/linkerd-viz --wait
       
       ### Linkerd smi
 
-      helm install linkerd-smi -n linkerd-smi --create-namespace linkerd-smi/linkerd-smi --wait
+      helm upgrade -i linkerd-smi -n linkerd-smi --create-namespace linkerd-smi/linkerd-smi --wait
 
       ### Linkerd Multicluster
 
-      helm install linkerd-multicluster -n linkerd-multicluster --create-namespace linkerd/linkerd-multicluster --wait
+      helm upgrade -i linkerd-multicluster -n linkerd-multicluster --create-namespace linkerd/linkerd-multicluster --wait
       
       ### Linkerd Jaeger
-      helm install linkerd-jaeger -n linkerd-jaeger --create-namespace linkerd/linkerd-jaeger --wait
+      helm upgrade -i linkerd-jaeger -n linkerd-jaeger --create-namespace linkerd/linkerd-jaeger --wait
       
       kubectl -n emojivoto set env --all deploy OC_AGENT_HOST=collector.linkerd-jaeger:55678
       
       ### Install Flagger
       kubectl apply -f https://raw.githubusercontent.com/fluxcd/flagger/main/artifacts/flagger/crd.yaml
       helm upgrade --install flagger flagger/flagger --namespace=linkerd-viz --set crd.create=false --set linkerdAuthPolicy.create=true --set meshProvider=linkerd --set metricsServer=http://prometheus:9090
-      
-      ### BCloud Manifests
-      kubectl apply -f manifests/buoyant/dataplane-prod.yaml
-      kubectl apply -f manifests/buoyant/controlplane-prod.yaml
 
-    elif [[ "${c}" == "dev" || "${c}" == "test" ]]
-    then
-      ### BCloud Manifests
-      kubectl apply -f manifests/buoyant/dataplane.yaml
-    else
-      kubectl apply -f manifests/buoyant/dataplane.yaml
-      kubectl apply -f "manifests/buoyant/controlplane.yaml"
+      kubectl apply -f manifests/buoyant/dataplane-prod.yaml
     fi
     ## Apply policy objects
     kubectl apply -f manifests/booksapp

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ServiceAccount
+imagePullSecrets:
+  - name: buoyant-registry-secret
+metadata:
+  name: buoyant-cloud-agent
+  namespace: linkerd-buoyant
